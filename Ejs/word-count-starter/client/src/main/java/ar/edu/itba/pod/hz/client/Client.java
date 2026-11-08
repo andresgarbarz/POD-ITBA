@@ -4,9 +4,12 @@ import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.config.GroupConfig;
+import ar.edu.itba.pod.hz.mr.First100LinesKeyPredicate;
 import ar.edu.itba.pod.hz.mr.LongestWordMapper;
 import ar.edu.itba.pod.hz.mr.LongestWordReducerFactory;
 import ar.edu.itba.pod.hz.mr.TokenizerMapper;
+import ar.edu.itba.pod.hz.mr.WordCountCollator;
+import ar.edu.itba.pod.hz.mr.WordCountCombinerFactory;
 import ar.edu.itba.pod.hz.mr.WordCountReducerFactory;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ICompletableFuture;
@@ -21,6 +24,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,18 +70,16 @@ public class Client {
 
 			// MapReduce Job
 			Job<String, String> job = jobTracker.newJob(wordsKeyValueSource);
-			ICompletableFuture<Map<String, Long>> future = job
+			ICompletableFuture<List<Map.Entry<String, Long>>> future = job
+					.keyPredicate(new First100LinesKeyPredicate())
 					.mapper(new TokenizerMapper())
+					.combiner(new WordCountCombinerFactory())
 					.reducer(new WordCountReducerFactory())
-					.submit();
+					.submit(new WordCountCollator());
 
 			// Wait and retrieve the result
-			Map<String, Long> result = future.get();
-
-			// Sort entries ascending by count and print
-			result.entrySet().stream()
-					.sorted(Map.Entry.comparingByValue())
-					.forEach(IO::println);
+			List<Map.Entry<String, Long>> result = future.get();
+			result.forEach(IO::println);
 
 			//
 			// Clase 11: Ejercicio 2

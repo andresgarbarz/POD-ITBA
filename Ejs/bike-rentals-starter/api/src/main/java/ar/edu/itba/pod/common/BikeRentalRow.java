@@ -1,8 +1,13 @@
 package ar.edu.itba.pod.common;
 
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.DataSerializable;
+
+import java.io.IOException;
 import java.time.LocalDateTime;
 
-public class BikeRentalRow {
+public class BikeRentalRow implements DataSerializable {
 
     private String startStation, endStation;
     private LocalDateTime startDate, endDate;
@@ -41,6 +46,24 @@ public class BikeRentalRow {
 
     public boolean isMember() {
         return isMember;
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeUTF(startStation);
+        out.writeObject(startDate);
+        out.writeUTF(endStation);
+        out.writeObject(endDate);
+        out.writeBoolean(isMember);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        startStation = in.readUTF();
+        startDate = in.readObject();
+        endStation = in.readUTF();
+        endDate = in.readObject();
+        isMember = in.readBoolean();
     }
 
 }
